@@ -28,7 +28,7 @@ const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",")
       .map((origin) => origin.trim())
       .filter(Boolean)
-  : ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"];
+  : ["https://bananavision.vercel.app/"];
 
 const corsOptions = {
   origin: (origin, callback) => {
