@@ -23,24 +23,33 @@ const statisticApi = require("./src/routes/statistic.routes");
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(express.json({ limit: "10mb" }));
 
-// CORS harus SEBELUM helmet untuk Firebase
+// 1. Hapus slash di akhir URL
 const allowedOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",")
       .map((origin) => origin.trim())
       .filter(Boolean)
-  : ["https://bananavision.vercel.app/"];
+  : ["https://bananavision.vercel.app"]; // <--- HAPUS "/" DI SINI
 
 const corsOptions = {
   origin: (origin, callback) => {
+    // Izinkan request tanpa origin (seperti Postman atau mobile apps)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error("Not allowed by CORS"));
+    
+    // Logika pengecekan yang lebih aman
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error(`CORS Blocked for origin: ${origin}`); // Tambahkan log ini untuk debug
+      callback(new Error("Not allowed by CORS"));
+    }
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   optionsSuccessStatus: 204,
 };
+
+app.use(cors(corsOptions));
 
 app.use(cors(corsOptions));
 
