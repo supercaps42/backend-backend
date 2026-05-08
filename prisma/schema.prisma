@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  email         String    @unique
+  name          String
+  avatar        String?
+  provider      String    @default("google")
+  providerId    String?   @unique  
+  
+  // Settings
+  notifications Boolean   @default(true)
+  language      String    @default("id")
+  
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  
+  // Soft delete (OPTIONAL - recommend adding)
+  isDeleted     Boolean   @default(false)
+  deletedAt     DateTime?
+  
+  // Relations
+  analyses      Analysis[]
+  feedbacks     Feedback[]
+  
+  @@map("users")
+}
+
+
+model Analysis {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String    @db.ObjectId
+  
+  imageUrl         String?   // null when image not stored (cloud storage recommended for production)
+  imageSize        Int?
+  
+  detectedDisease  String
+  diseaseId        String?   @db.ObjectId
+  confidence       Float
+  status           String    @default("completed") 
+  
+  predictions      Json      // [{disease: "name", confidence: 95}]
+  
+  notes            String?
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt  
+  
+  isDeleted        Boolean   @default(false)
+  
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disease          Disease?  @relation(fields: [diseaseId], references: [id])
+  
+  @@index([userId])
+  @@index([diseaseId])
+  @@index([createdAt])
+  @@index([status]) 
+  @@map("analyses")
+}
+
+model Disease {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  name             String    
+  
+  // Description
+  description      String
+  category         String    // Jamur, Bakteri, Virus
+  severity         String    // Ringan, Sedang, Berat
+  
+  // Symptoms
+  symptoms         String[]
+  
+  // Management
+  prevention       String[]
+  treatment        String[]
+  
+  // Images
+  imageUrl         String?
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isActive         Boolean   @default(true)  // ← Add this
+  
+  // Relations
+  analyses         Analysis[]
+  
+  @@index([name])
+  @@index([category])
+  @@map("diseases")
+}
+
+model Statistic {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  diseaseName     String
+  diseaseId       String?  @db.ObjectId  
+  
+  year            Int
+  month           Int
+  
+  detectionCount  Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([diseaseName, year, month])
+  @@index([year, month])
+  @@index([diseaseId])  // ← Add this
+  @@map("statistics")
+}
+
+model Feedback {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  message         String
+  rating          Int?    
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@map("feedback")
+}
